@@ -31,7 +31,7 @@ benchmark_list <- function(type,
              ActiveYear == rlang::UQ(active_year)) %>% 
     arrange(ExpertGroup) %>% 
     mutate(StockKeyLabel = as.factor(StockKeyLabel),
-           StockKeyDescription = as.factor(StockKeyDescription),
+           StockKeyDescription = as.character(StockKeyDescription),
            ExpertGroup = as.factor(ExpertGroup),
            DataCategory = as.factor(floor(as.numeric(DataCategory))),
            WKname = as.factor(NA),
@@ -61,7 +61,7 @@ later_years <- c(next_year, next_year + 1)
 
 [<img align="right" alt="ICES Logo" width="17%" height="17%" src="http://ices.dk/_layouts/15/1033/images/icesimg/iceslogo.png">](http://ices.dk)
 
-## Benchmark Overview {.tabset .tabset-fade}
+## Benchmark Overview {.tabset .tabset-fade .tabset-pills}
 
 ### `r this_year` Benchmarks
 ```{r this_year_benchmark, echo = FALSE}
