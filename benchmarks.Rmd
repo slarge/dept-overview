@@ -1,0 +1,143 @@
+---
+title: ""
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(DT)
+library(rmarkdown)
+
+stock_list_raw <- jsonlite::fromJSON("http://internalservices.ices.local:60/api/SDInternalDWs",
+                                     simplifyDataFrame = TRUE)
+
+benchmark_list <- function(type,
+                           year,
+                           active_year = NULL) {
+  type <- rlang::enquo(type)
+
+
+  if(is.null(active_year)){
+  active_year <- as.numeric(format(Sys.Date(), format = "%Y"))
+  } 
+  
+  if(!is.numeric(active_year)){
+    stop("Year values must be numeric.")
+  }
+  
+  stock_list_raw %>% 
+    filter(rlang::UQ(type) == year & 
+             ActiveYear == active_year) %>% 
+    arrange(ExpertGroup) %>% 
+    mutate(DataCategory = floor(as.numeric(DataCategory)),
+           WKname = NA,
+           WKdate = NA,
+           WKchair = NA) %>% 
+    select(`Stock code` = StockKeyLabel,
+           `Stock name` = StockKeyDescription,
+           `Data category` = DataCategory,
+           `Expert group` = ExpertGroup,
+           `Benchmark process` = WKname,
+           `Benchmark date` = WKdate,
+           `Benchmark chair` = WKchair) %>% 
+    distinct(.keep_all = TRUE) %>% 
+    DT::datatable(.,
+                  rownames = FALSE,
+                  options = list(pageLength = 20, dom = "tip")
+    )
+}
+
+```
+
+[<img align="right" alt="ICES Logo" width="17%" height="17%" src="http://ices.dk/_layouts/15/1033/images/icesimg/iceslogo.png">](http://ices.dk)
+
+## Benchmark Overview {.tabset .tabset-fade}
+
+### 2017 Benchmarks
+```{r benchmarks_2017, echo = FALSE}
+
+benchmark_list(type = PlannedBenchmark,
+               year = 2017,
+               active_year = 2017)
+# 
+# stock_list_raw %>% 
+#   filter(PlannedBenchmark == 2017,
+#          ActiveYear == 2017) %>% 
+#   arrange(ExpertGroup) %>% 
+#   mutate(DataCategory = floor(as.numeric(DataCategory))) %>% 
+#   select(`Stock code` = StockKeyLabel,
+#         `Stock name` = StockKeyDescription,
+#         `Expert group` = ExpertGroup,
+#         `Stock coordinator` = StockCoordinator1,
+#         `Data category` = DataCategory) %>% 
+#   distinct(.keep_all = TRUE) %>% 
+#   DT::datatable(.,
+#                 rownames = FALSE,
+#                 options = list(pageLength = 20, dom = "tip")
+#                 )
+
+```
+
+### 2018 Benchmarks
+```{r benchmarks_2018, echo = FALSE}
+
+benchmark_list(type = PlannedBenchmark,
+               year = 2018,
+               active_year = 2017)
+
+# stock_list_raw %>% 
+#   filter(PlannedBenchmark == 2018,
+#          ActiveYear == 2017) %>% 
+#   arrange(ExpertGroup) %>% 
+#   mutate(DataCategory = floor(as.numeric(DataCategory)),
+#          WKName = case_when(grepl("anf\\.|ank\\.|mon\\.", StockKeyLabel) ~ "WKAnglerfish-2018",
+#                             grepl("fle\\.|lem\\.|whg\\.|wit\\.|bll\\.", StockKeyLabel) ~ "WKNS_2018",
+#                             grepl("her\\.|ane\\.", StockKeyLabel) ~ "WKPela_2018",
+#                             grepl("reb\\.|reg\\.", StockKeyLabel) ~ "WKRedfish_2018",
+#                             TRUE ~ NA_character_)) %>% 
+#   select(`Stock code` = StockKeyLabel,
+#          `Stock name` = StockKeyDescription,
+#          `Expert group` = ExpertGroup,
+#          `Workshop name` = WKName,
+#          `Stock coordinator` = StockCoordinator1,
+#          `Data category` = DataCategory) %>% 
+#   distinct(.keep_all = TRUE) %>% 
+#   DT::datatable(.,
+#                 rownames = FALSE,
+#                 options = list(pageLength = 20, dom = "tip")
+#   )
+
+```
+
+### Proposed Benchmarks
+```{r benchmarks_proposed, echo = FALSE}
+
+benchmark_list(type = ProposedBenchmark,
+               year = 2018,
+               active_year = 2017)
+# 
+# stock_list_raw %>% 
+#   filter(ProposedBenchmark >= 2018,
+#          ActiveYear == 2017) %>% 
+#   arrange(ExpertGroup) %>% 
+#   mutate(DataCategory = floor(as.numeric(DataCategory))) %>% 
+#   select(`Stock code` = StockKeyLabel,
+#         `Stock name` = StockKeyDescription,
+#         `Expert group` = ExpertGroup,
+#         `Stock coordinator` = StockCoordinator1,
+#         `Data category` = DataCategory) %>% 
+#   distinct(.keep_all = TRUE) %>% 
+#   DT::datatable(.,
+#                 rownames = FALSE,
+#                 options = list(pageLength = 20, dom = "tip")
+#                 )
+
+```
+
+#
+Proposed benchmarks have been requested by an Assessment Working Group but have not yet been agreed upon by ACOM.
+
+_Last updated on `r format(Sys.Date(), format = "%e %B %Y")`._
