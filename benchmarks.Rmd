@@ -31,7 +31,7 @@ benchmark_list <- function(type,
              ActiveYear == rlang::UQ(active_year)) %>% 
     arrange(ExpertGroup) %>% 
     mutate(StockKeyLabel = as.factor(StockKeyLabel),
-           StockKeyDescription = as.character(StockKeyDescription),
+           StockKeyDescription = as.factor(StockKeyDescription),
            ExpertGroup = as.factor(ExpertGroup),
            DataCategory = as.factor(floor(as.numeric(DataCategory))),
            WKname = as.factor(NA),
@@ -47,10 +47,11 @@ benchmark_list <- function(type,
     distinct(.keep_all = TRUE) %>% 
     DT::datatable(.,
                   rownames = FALSE,
-                  filter = "top",
+                  # filter = "top",
                   options = list(pageLength = 20,
-                                 dom = "tip")
-    )
+                                 autoWidth = TRUE,
+                                 dom = "ft")
+                  )
 }
 
 this_year <- as.numeric(format(Sys.Date(), format = "%Y"))
@@ -61,7 +62,7 @@ later_years <- c(next_year, next_year + 1)
 
 [<img align="right" alt="ICES Logo" width="17%" height="17%" src="http://ices.dk/_layouts/15/1033/images/icesimg/iceslogo.png">](http://ices.dk)
 
-## Benchmark Overview {.tabset .tabset-fade .tabset-pills}
+## Benchmark Overview {.tabset .tabset-fade}
 
 ### `r this_year` Benchmarks
 ```{r this_year_benchmark, echo = FALSE}
