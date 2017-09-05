@@ -16,19 +16,56 @@ stock_list_raw <- jsonlite::fromJSON("http://internalservices.ices.local:60/api/
 
 benchmark_list <- function(type,
                            year,
-                           active_year = NULL) {
+                           active_year = NULL,
+                           caption = NULL) {
 
   type <- rlang::enquo(type)
   year <- rlang::enquo(year)
   
   if(is.null(active_year)){
   active_year <- as.numeric(format(Sys.Date(), format = "%Y"))
-  active_year <-  rlang::enquo(active_year)
+  active_year <- rlang::enquo(active_year)
   } 
   
-  stock_list_raw %>% 
-    filter(rlang::UQ(type) %in% rlang::UQ(year) & 
-             ActiveYear == rlang::UQ(active_year)) %>% 
+  
+  stock_list <- stock_list_raw %>% 
+    # filter(ActiveYear == rlang::UQ(active_year))
+    filter(ActiveYear == 2017) %>% 
+    distinct(.keep_all = TRUE)
+  
+  # Format so the species names will be italicized
+  stock_list_frmt <- bind_rows(
+    # Normal binomial names
+    stock_list %>%
+      filter(grepl("[[:space:]]", SpeciesScientificName)) %>%
+      mutate(StockKeyDescription = stringr::str_replace_all(string = StockKeyDescription,
+                                                            pattern = SpeciesScientificName,
+                                                            replacement = paste0("<em>", SpeciesScientificName, "</em>"))),
+    # Groups of species (.spp)
+    stock_list %>%
+      filter(grepl(" spp.*$", StockKeyDescription)) %>%
+      mutate(StockKeyDescription = stringr::str_replace_all(string = StockKeyDescription,
+                                                            pattern = SpeciesScientificName,
+                                                            replacement = paste0("<em>", SpeciesScientificName, "</em>"))),
+    # A bit different notation (embedded in 2 sets of parentheses)
+    stock_list %>%
+      filter(StockKeyLabel %in% c("raj-mar", "raj.27.1012")) %>%
+      mutate(StockKeyDescription = stringr::str_replace_all(string = StockKeyDescription,
+                                                            pattern = "Raja clavata",
+                                                            replacement = "<em>Raja clavata</em>")),
+    
+    # The "others" with no species name
+    stock_list %>%
+      filter(!grepl(" spp.*$", StockKeyDescription)) %>%
+      filter(!StockKeyLabel %in% c("raj-mar", "raj.27.1012")) %>%
+      filter(!grepl("[[:space:]]", SpeciesScientificName))
+  ) %>% 
+    distinct(.keep_all = TRUE)
+
+  if(nrow(stock_list) != nrow(stock_list_frmt)) stop("Number of rows different when formatting")
+  
+  stock_list_frmt %>% 
+    filter(rlang::UQ(type) %in% rlang::UQ(year)) %>% 
     arrange(ExpertGroup) %>% 
     mutate(StockKeyLabel = as.factor(StockKeyLabel),
            StockKeyDescription = as.factor(StockKeyDescription),
@@ -46,6 +83,8 @@ benchmark_list <- function(type,
            `Benchmark chair` = WKchair) %>% 
     distinct(.keep_all = TRUE) %>% 
     DT::datatable(.,
+                  escape = FALSE,
+                  caption = caption,
                   rownames = FALSE,
                   # filter = "top",
                   options = list(pageLength = 20,
@@ -75,8 +114,7 @@ benchmark_list(type = LatestBenchmark,
 ```{r next_year_benchmark, echo = FALSE}
 
 benchmark_list(type = PlannedBenchmark,
-               year = next_year,
-               active_year = 2017)
+               year = next_year)
 
 ```
 
@@ -84,11 +122,12 @@ benchmark_list(type = PlannedBenchmark,
 ```{r benchmarks_proposed, echo = FALSE}
 
 benchmark_list(type = ProposedBenchmark,
-               year = later_years)
+               year = later_years,
+               caption = htmltools::tags$caption(style = "caption-side: bottom; text-align: center;",
+                                                           htmltools::em("Proposed benchmarks have been requested by an 
+                                                                   Assessment Working Group but have not yet been agreed upon by ACOM.")))
 
 ```
 
 #
-Proposed benchmarks have been requested by an Assessment Working Group but have not yet been agreed upon by ACOM.
-
 _Last updated on `r format(Sys.Date(), format = "%e %B %Y")`._
