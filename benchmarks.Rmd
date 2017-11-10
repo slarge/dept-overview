@@ -87,15 +87,15 @@ benchmark_list <- function(type,
                   caption = caption,
                   rownames = FALSE,
                   # filter = "top",
-                  options = list(pageLength = 20,
+                  options = list(pageLength = 100,
                                  autoWidth = TRUE,
-                                 dom = "ft")
+                                 dom = "ftp")
                   )
 }
 
 this_year <- as.numeric(format(Sys.Date(), format = "%Y"))
 next_year <- this_year + 1
-later_years <- c(next_year, next_year + 5)
+later_years <- seq(next_year, next_year + 5)
 
 ```
 
@@ -107,7 +107,7 @@ later_years <- c(next_year, next_year + 5)
 ```{r this_year_benchmark, echo = FALSE}
 
 benchmark_list(type = LatestBenchmark,
-               year = this_year)
+               year = this_year, active_year = 2017)
 ```
 
 ### `r next_year` Benchmarks
