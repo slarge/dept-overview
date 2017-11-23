@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(DT)
 library(rmarkdown)
+library(glue)
 # 
 stock_list_raw <- jsonlite::fromJSON("http://internalservices.ices.local:60/api/SDInternalDWs",
                                      simplifyDataFrame = TRUE)
@@ -27,6 +28,11 @@ benchmark_list <- function(type,
   active_year <- rlang::enquo(active_year)
   } 
   
+  if(is.null(caption)) {
+    caption <- ""
+  }
+  caption <- htmltools::tags$caption(style = "caption-side: bottom; text-align: center;",
+                                     htmltools::em(caption))
   
   stock_list <- stock_list_raw %>% 
     filter(ActiveYear == rlang::UQ(active_year)) %>% 
@@ -59,7 +65,18 @@ benchmark_list <- function(type,
       filter(!StockKeyLabel %in% c("raj-mar", "raj.27.1012")) %>%
       filter(!grepl("[[:space:]]", SpeciesScientificName))
   ) %>% 
-    distinct(.keep_all = TRUE)
+    distinct(.keep_all = TRUE) %>%
+    mutate(stock_code = dplyr::case_when(YearOfLastAssessment <= 2016 ~ PreviousStockKeyLabel,
+                                         YearOfLastAssessment >= 2017 ~ StockKeyLabel,
+                                         TRUE ~ NA_character_),
+           stock_code = dplyr::case_when(stock_code == "cod.27.25-32" ~ "cod.27.24-32",
+                                         stock_code == "pan-flad" ~ "pand-flad",
+                                         stock_code == "ple.27.7fg" ~ " ple.27.7f-g",
+                                         !stock_code %in% c("cod.27.25-32", "pan-flad", "ple.27.7fg") ~ stock_code,
+                                         TRUE ~ NA_character_),
+           dates = format(as.Date(BenchmarkStartDate, format = "%Y-%m-%d"), "%b %Y"),
+           advice_url = glue::glue("http://www.ices.dk/sites/pub/Publication%20Reports/Advice/{YearOfLastAssessment}/{YearOfLastAssessment}/{stock_code}.pdf"),
+           advice_url = glue::glue('<a href={advice_url} target="_blank" title="Click here for the most recent advice">{StockKeyLabel}</a>'))
 
   if(nrow(stock_list) != nrow(stock_list_frmt)) stop("Number of rows different when formatting")
   
@@ -70,11 +87,11 @@ benchmark_list <- function(type,
            StockKeyDescription = as.factor(StockKeyDescription),
            ExpertGroup = as.factor(ExpertGroup),
            DataCategory = as.factor(floor(as.numeric(DataCategory))),
-           WKname = as.factor(NA), # Will be added from new web service
-           WKdate = as.factor(NA), # Will be added from new web service
+           WKname = as.factor(Benchmark),
+           WKdate = dates,
            WKchair = as.factor(NA) # Will be added from new web service
            ) %>% 
-    select(`Stock code` = StockKeyLabel,
+    select(`Stock code` = advice_url,
            `Stock name` = StockKeyDescription,
            `Data category` = DataCategory,
            `Expert group` = ExpertGroup,
@@ -98,7 +115,8 @@ next_year <- this_year + 1
 later_years <- seq(next_year, next_year + 5)
 
 ```
-
+<br>
+<br>
 [<img align="right" alt="ICES Logo" width="17%" height="17%" src="http://ices.dk/_layouts/15/1033/images/icesimg/iceslogo.png">](http://ices.dk)
 
 ## Benchmark Overview {.tabset .tabset-fade}
@@ -107,14 +125,17 @@ later_years <- seq(next_year, next_year + 5)
 ```{r this_year_benchmark, echo = FALSE}
 
 benchmark_list(type = LatestBenchmark,
-               year = this_year, active_year = 2017)
+               year = this_year, 
+               active_year = 2017,
+               caption = "")
 ```
 
 ### `r next_year` Benchmarks
 ```{r next_year_benchmark, echo = FALSE}
 
 benchmark_list(type = PlannedBenchmark,
-               year = next_year)
+               year = next_year,
+               caption = "")
 
 ```
 
@@ -123,9 +144,7 @@ benchmark_list(type = PlannedBenchmark,
 
 benchmark_list(type = ProposedBenchmark,
                year = later_years,
-               caption = htmltools::tags$caption(style = "caption-side: bottom; text-align: center;",
-                                                           htmltools::em("Proposed benchmarks have been requested by an 
-                                                                   Assessment Working Group but have not yet been agreed upon by ACOM.")))
+               caption = "Proposed benchmarks have been requested by a Working Group but have not yet been agreed upon by ACOM.")
 
 ```
 
