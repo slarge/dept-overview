@@ -89,7 +89,7 @@ benchmark_list <- function(type,
            DataCategory = as.factor(floor(as.numeric(DataCategory))),
            WKname = as.factor(Benchmark),
            WKdate = dates,
-           WKchair = as.factor(NA) # Will be added from new web service
+           WKchair = as.factor(BenchmarkChair) # Will be added from new web service
            ) %>% 
     select(`Stock code` = advice_url,
            `Stock name` = StockKeyDescription,
